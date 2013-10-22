@@ -1,0 +1,68 @@
+#!/bin/sh
+
+is_tarbomb() {
+    top_level="$(
+        unzip -l "$file" |\
+        awk '
+            indata == 1 {
+                if ($0 ~ /^-/) { exit }
+                    
+                $1=$2=$3=""
+                sub(/^\s*/, "")
+                if ($0 ~ /./)
+                    print
+            }
+            /^-/ && indata != 1 { indata = 1 }
+            ' |\
+        sort -t/ -k1,1 -u
+    )"
+
+    ntop_level=$(echo "$top_level" | wc -l)
+
+
+    if [ "$ntop_level" -eq 1 ]; then
+        echo 0
+    else
+        echo "$ntop_level"
+    fi
+}
+
+file="$1"
+
+base="$(echo "$file" | sed 's/\.[^.]*$//')"
+ext="$(echo "$file" | sed 's/^[^.]*//')"
+
+test $(is_tarbomb) -ne 0 && echo bomb!
+
+echo $(is_tarbomb)
+
+exit
+
+case "$ext" in 
+    *.zip)
+      list="unzip -l"
+      open="unzip"
+      ;;
+    *.tgz)
+      list="tar tzf"
+      open="tar xzf"
+      ;;
+    *.tar.gz)
+      list="tar tzf"
+      open="tar xzf"
+      ;;
+    *.tar.bz2)
+      list="tar tjf"
+      open="tar xjf"
+      ;;
+    *.7z)
+      list=""
+      open=""
+      ;;
+    *rar)
+      list=""
+      open=""
+      ;;
+esac
+
+
